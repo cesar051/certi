@@ -1,54 +1,55 @@
 const express = require('express');
-const mssql = require('mssql'); // Ensure correct library name
+const mssql = require('mssql'); // Assuming you're using mssql for SQL Server
+const bcrypt = require('bcrypt'); // For secure password hashing
 
 const app = express();
-const port = 3001;
 
-// Improved error handling and security considerations
+// Database connection configuration (replace with your credentials)
 const config = {
-  user: process.env.SQL_SERVER_USER || 'your_username',
-  password: process.env.SQL_SERVER_PASSWORD || 'your_password',
-  server: process.env.SQL_SERVER_HOST || 'your_server',
-  database: process.env.SQL_SERVER_DATABASE || 'your_database',
-  options: {
-    encrypt: true, // Enable encryption for secure connection (consider using a certificate)
-  },
+  user: 'adminapps@proyectosapps',
+  password: 'Colombia2024**',
+  server: 'tcp:proyectosapps.database.windows.net,1433',
+  database: 'safiro'
 };
 
-// Route for login with prepared statements for enhanced security
-app.post('/api/login', async (req, res) => {
+// Connect to database
+async function connectToDb() {
+  try {
+    await mssql.connect(config);
+    console.log('Connected to database');
+  } catch (err) {
+    console.error('Error connecting to database:', err);
+  }
+}
+
+connectToDb(); // Connect on startup
+
+app.post('/services/api_login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Create the connection to the database
-    const pool = await mssql.connect(config);
+    // 1. Fetch user by email
+    const user = await sql.query(`SELECT * FROM wa_usuarios  WHERE correo = '${email}'`);
 
-    // Use prepared statements to prevent SQL injection vulnerabilities
-    const request = pool.request();
-    request.input('email', mssql.VarChar, email);
-    request.input('password', mssql.VarChar, password);
-
-    const result = await request.query(`
-      SELECT * FROM usuarios
-      WHERE email = @email AND password = @password
-    `);
-
-    if (result.recordset.length > 0) {
-      res.json({ message: 'Inicio de sesión exitoso' });
-    } else {
-      res.status(401).json({ message: 'Credenciales inválidas' });
+    if (user.recordset.length === 0) {
+      // Email not found, send failure response
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
-  } catch (err) {
-    console.error(err);
 
-    // Provide informative error messages without revealing sensitive details
-    res.status(500).json({ message: 'Error del servidor' }); // Generic error message
-  } finally {
-    // Ensure proper connection closure to avoid resource leaks
-    if (pool && pool.connected) pool.close();
+    // 2. Compare password hashes securely
+    const isPasswordValid = await bcrypt.compare(password, user.recordset[0].password);
+
+    if (!isPasswordValid) {
+      // Invalid password, send failure response
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // 3. Login successful, send success response (optional data)
+    res.json({ message: 'Login successful!', user: { /* user data you want to send */ } });
+  } catch (err) {
+    console.error('Error during login:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Servidor escuchando en el puerto ${port}`);
-});
+app.listen(3000, () => console.log('Server listening on port 3000'));

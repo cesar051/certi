@@ -1,35 +1,29 @@
-const sql = require('mssql');
+const express = require('express');
+const mssql = require('mssql');
 
-// Configuración de la conexión
+const app = express();
+const port = 3000;
+
+// Configuración de la conexión a la base de datos
 const config = {
-    user: 'your_user',
-    password: 'your_password',
-    server: 'your_server',
-    database: 'your_database'
+  user: 'adminapps@proyectosapps',
+  password: 'Colombia2024**',
+  server: 'tcp:proyectosapps.database.windows.net,1433',
+  database: 'safiro'
 };
 
-// Función para conectar a la base de datos
-async function connectToDb() {
-    try {
-        await sql.connect(config);
-        console.log("Conectado a la base de datos");
-    } catch (err) {
-        console.error("Error al conectar a la base de datos", err);
-    }
-}
+// Endpoint para obtener todos los usuarios
+app.get('/users', async (req, res) => {
+  try {
+    await mssql.connect(config);
+    const result = await sql.query('SELECT * FROM wa_usuarios');
+    res.json(result.recordsets);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error al obtener los usuarios');
+  }
+});
 
-// Función para verificar las credenciales
-async function validateCredentials(username, password) {
-    try {
-        const result = await sql.query(`SELECT * FROM users WHERE username = '<span class="math-inline">\{username\}' AND password \= '</span>{password}'`);
-        return result.recordset.length > 0;
-    } catch (err) {
-        console.error("Error al validar credenciales", err);
-        return false;
-    }
-}
-
-module.exports = {
-    connectToDb,
-    validateCredentials
-};
+app.listen(port, () => {
+  console.log(`Servidor escuchando en el puerto ${port}`);
+});

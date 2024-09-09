@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import axios from 'axios';
 
 
 const LoginForm = () => {
 const [email, setEmail] = useState('');
 const [password, setPassword] = useState('');
 
-const handleSubmit = (e) => {
+const handleSubmit = async (e) => {
 e.preventDefault();   
 
 // Aquí realizarías la lógica para enviar los datos al servidor
-console.log('Email:', email);
- console.log('Password:', password);
+try {
+  const response = await axios.post('/services/api_login',   
+{ email, password });
+  console.log(response.data);
+} catch (error) {
+  console.error(error);   
+
+}
+
  };
 
 return (
@@ -28,9 +36,10 @@ id="email" placeholder="Ingrese su email" value={email} onChange={(e) => setEmai
 id="password" placeholder="Ingrese su contraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
 </div>
 <div className="form-group form-group-margin"> {/* Create a dedicated margin class */}
-        <button type="submit" className="btn btn-primary">
+<button type="submit" className="btn btn-primary">
           Iniciar Sesión
         </button>
+ 
  
         </div>
  </form>
